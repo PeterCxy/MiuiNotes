@@ -129,7 +129,7 @@ public class FlingerListView extends ListView
 	
 	private float mStartTouchPositionX;
 	private float mStartTouchPositionY;
-	private RelativeLayout mFlingingLayout;
+	private FrameLayout mFlingingLayout;
 	private View mFlingingChild;
 	private int mFlingingPos;
 	private int mFlingingWidth;
@@ -188,7 +188,7 @@ public class FlingerListView extends ListView
 				}
 				mFlingingAllowed = false;
 				if (mFlingingPos != INVALID_POSITION) {
-					mFlingingLayout = (RelativeLayout) super.getChildAt(mFlingingPos);
+					mFlingingLayout = (FrameLayout) super.getChildAt(mFlingingPos);
 					mFlingingChild = mFlingingLayout.getChildAt(0);
 					Rect r = new Rect();
 					mFlingingLayout.getDrawingRect(r);
