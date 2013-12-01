@@ -49,6 +49,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnCreateContextMenuListener;
 import android.view.View.OnTouchListener;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -69,6 +70,7 @@ import net.micode.notes.tool.BackupUtils;
 import net.micode.notes.tool.DataUtils;
 import net.micode.notes.tool.ResourceParser;
 import net.micode.notes.ui.NotesListAdapter.AppWidgetAttribute;
+import net.micode.notes.ui.FlingerListView;
 import net.micode.notes.widget.NoteWidgetProvider_2x;
 import net.micode.notes.widget.NoteWidgetProvider_4x;
 
@@ -101,7 +103,7 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
 
     private NotesListAdapter mNotesListAdapter;
 
-    private ListView mNotesListView;
+    private FlingerListView mNotesListView;
 
     private Button mAddNewNote;
 
@@ -213,11 +215,12 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         mContentResolver = this.getContentResolver();
         mBackgroundQueryHandler = new BackgroundQueryHandler(this.getContentResolver());
         mCurrentFolderId = Notes.ID_ROOT_FOLDER;
-        mNotesListView = (ListView) findViewById(R.id.notes_list);
+        mNotesListView = (FlingerListView) findViewById(R.id.notes_list);
         mNotesListView.addFooterView(LayoutInflater.from(this).inflate(R.layout.note_list_footer, null),
                 null, false);
         mNotesListView.setOnItemClickListener(new OnListItemClickListener());
         mNotesListView.setOnItemLongClickListener(this);
+		mNotesListView.setOnItemFlingListener(new NoteFlingListener());
         mNotesListAdapter = new NotesListAdapter(this);
         mNotesListView.setAdapter(mNotesListAdapter);
         mAddNewNote = (Button) findViewById(R.id.btn_new_note);
@@ -230,10 +233,51 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         mState = ListEditState.NOTE_LIST;
         mModeCallBack = new ModeCallback();
     }
+	
+	private class NoteFlingListener implements FlingerListView.OnItemFlingListener {
+		@Override
+		public boolean onItemFling(View view, int position, long id, ViewGroup parent) {
+			if (mModeCallBack.mActionMode == null) {
+				if (view instanceof NotesListItem) {
+					if (((NotesListItem) view).getItemData().getType() == Notes.TYPE_NOTE) {
+						mNotesListView.setClickable(false);
+						mNotesListView.setLongClickable(false);
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+		
+		@Override
+		public boolean onItemFlingEnd(View view, int position, long id, ViewGroup parent) {
+			return true;
+		}
+		
+		@Override
+		public void onItemFlingCancel(View view, int position, long id, ViewGroup parent) {
+			mNotesListView.runAfterAnimation(new Runnable() {
+				@Override
+				public void run() {
+					mNotesListView.setClickable(true);
+					mNotesListView.setLongClickable(true);
+				}
+			});
+		}
+		
+		@Override
+		public void onItemFlingOut(int position) {
+			mNotesListAdapter.setChoiceMode(false);
+			mNotesListAdapter.setCheckedItem(position, true);
+			batchDelete();
+			mNotesListView.setClickable(true);
+			mNotesListView.setLongClickable(true);
+		}
+	}
 
     private class ModeCallback implements ListView.MultiChoiceModeListener, OnMenuItemClickListener {
         private DropdownMenu mDropDownMenu;
-        private ActionMode mActionMode;
+        public ActionMode mActionMode;
         private MenuItem mMoveMenu;
 
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
@@ -297,13 +341,17 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
         }
 
         public void onDestroyActionMode(ActionMode mode) {
+			mActionMode = null;
             mNotesListAdapter.setChoiceMode(false);
             mNotesListView.setLongClickable(true);
             mAddNewNote.setVisibility(View.VISIBLE);
         }
 
         public void finishActionMode() {
-            mActionMode.finish();
+			if (mActionMode != null) {
+				mActionMode.finish();
+				mActionMode = null;
+			}
         }
 
         public void onItemCheckedStateChanged(ActionMode mode, int position, long id,
@@ -878,7 +926,11 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
 
     private class OnListItemClickListener implements OnItemClickListener {
 
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+			if (!mNotesListView.isClickable()) {
+				return;
+			}
+			View view = ((ViewGroup) v).getChildAt(0);
             if (view instanceof NotesListItem) {
                 NoteItemData item = ((NotesListItem) view).getItemData();
                 if (mNotesListAdapter.isInChoiceMode()) {
@@ -935,7 +987,8 @@ public class NotesListActivity extends Activity implements OnClickListener, OnIt
                 NoteColumns.MODIFIED_DATE + " DESC");
     }
 
-    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+    public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id) {
+		View view = ((ViewGroup) v).getChildAt(0);
         if (view instanceof NotesListItem) {
             mFocusNoteDataItem = ((NotesListItem) view).getItemData();
             if (mFocusNoteDataItem.getType() == Notes.TYPE_NOTE && !mNotesListAdapter.isInChoiceMode()) {

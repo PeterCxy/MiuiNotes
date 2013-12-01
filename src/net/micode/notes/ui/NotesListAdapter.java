@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.CursorAdapter;
 
 import net.micode.notes.data.Notes;
+import net.micode.notes.R;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -56,7 +57,8 @@ public class NotesListAdapter extends CursorAdapter {
     }
 
     @Override
-    public void bindView(View view, Context context, Cursor cursor) {
+    public void bindView(View v, Context context, Cursor cursor) {
+		View view = v instanceof NotesListItem ? v : ((ViewGroup) v).getChildAt(0);
         if (view instanceof NotesListItem) {
             NoteItemData itemData = new NoteItemData(context, cursor);
             ((NotesListItem) view).bind(context, itemData, mChoiceMode,

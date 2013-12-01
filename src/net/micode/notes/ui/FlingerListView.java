@@ -182,6 +182,7 @@ public class FlingerListView extends ListView
 				mStartTouchPositionY = y;
 				mFlingingPos = pointToPosition((int) x, (int) y);
 				if (mFlingingLayout != null && mFlingingAllowed == true) {
+					mFlingingChild.setAlpha(1.0f);
 					mFlingingChild.setTranslationX(0);
 					mFlingingChild = null;
 					mFlingingLayout = null;
@@ -190,6 +191,8 @@ public class FlingerListView extends ListView
 				if (mFlingingPos != INVALID_POSITION) {
 					mFlingingLayout = (FrameLayout) super.getChildAt(mFlingingPos);
 					mFlingingChild = mFlingingLayout.getChildAt(0);
+					mFlingingChild.setAlpha(1.0f);
+					mFlingingChild.setTranslationX(0);
 					Rect r = new Rect();
 					mFlingingLayout.getDrawingRect(r);
 					mFlingingWidth = r.width();
@@ -247,9 +250,9 @@ public class FlingerListView extends ListView
 										@Override
 										public void run() {
 											mFlingingChild.clearAnimation();
-											mFlingingChild.setAlpha(0f);
-											mFlingingChild.setTranslationX(0);
 											mListener.onItemFlingOut(mFlingingPos);
+											mFlingingChild.setAlpha(1.0f);
+											mFlingingChild.setTranslationX(0);
 											mFlingingLayout = null;
 											mFlingingChild = null;
 										}

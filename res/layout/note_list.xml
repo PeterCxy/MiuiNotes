@@ -37,7 +37,7 @@
             android:textColor="#FFEAD1AE"
             android:textSize="@dimen/text_font_size_medium" />
 
-        <ListView
+        <net.micode.notes.ui.FlingerListView
             android:id="@+id/notes_list"
             android:layout_width="fill_parent"
             android:layout_height="0dip"
